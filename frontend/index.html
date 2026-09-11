@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dropout-Risk Hotspot Mapper — Karnataka (Demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-title">
+    <span class="eyebrow">Horizon · AI with Education</span>
+    <h1>Dropout&#8209;Risk Hotspot Mapper</h1>
+    <span class="subtitle">Karnataka school network, demo build</span>
+  </div>
+  <dl class="stat-strip" id="statStrip">
+    <div class="stat"><dt>Schools analyzed</dt><dd id="statTotal">—</dd></div>
+    <div class="stat"><dt>High risk</dt><dd id="statHigh">—</dd></div>
+    <div class="stat"><dt>Hotspots found</dt><dd id="statHotspots">—</dd></div>
+    <div class="stat"><dt>Districts covered</dt><dd id="statDistricts">—</dd></div>
+  </dl>
+</header>
+
+<main class="layout">
+  <section class="map-pane">
+    <div id="map"></div>
+    <button id="resetView" class="reset-btn" hidden>&larr; All hotspots</button>
+    <div class="legend">
+      <span class="legend-title">Risk lift vs. state average</span>
+      <div class="legend-scale">
+        <span class="swatch low"></span><span class="swatch mid"></span><span class="swatch high"></span>
+      </div>
+      <div class="legend-labels"><span>lower</span><span>higher</span></div>
+      <div class="legend-labels" style="margin-top:4px;"><span>shaded districts = avg risk &middot; circles = hotspot cells</span></div>
+    </div>
+  </section>
+
+  <aside class="ledger" aria-label="Hotspots and deployment planning">
+    <div class="tab-bar" role="tablist">
+      <button class="tab active" id="tabHotspots" role="tab" aria-selected="true">Hotspots</button>
+      <button class="tab" id="tabDeploy" role="tab" aria-selected="false">Deploy units</button>
+    </div>
+
+    <div class="tab-panel" id="hotspotsPanel">
+      <div class="ledger-head">
+        <span class="ledger-no">No.</span>
+        <span class="ledger-name">District / cell</span>
+        <span class="ledger-count">Schools</span>
+        <span class="ledger-risk">Risk lift</span>
+      </div>
+      <ol class="ledger-body" id="ledgerBody">
+        <!-- rows injected by app.js -->
+      </ol>
+    </div>
+
+    <div class="tab-panel" id="deployPanel" hidden>
+      <div class="deploy-controls">
+        <label class="field">
+          <span>Mobile units (K)</span>
+          <input type="number" id="kInput" value="20" min="1" max="60" />
+        </label>
+        <label class="field">
+          <span>Service radius (km)</span>
+          <input type="number" id="radiusInput" value="20" min="2" max="100" />
+        </label>
+        <label class="field checkbox">
+          <input type="checkbox" id="equityInput" checked />
+          <span>Spread across districts (max <input type="number" id="capInput" value="1" min="1" max="10" class="inline-num" /> per district)</span>
+        </label>
+        <button id="runOptimize" class="run-btn">Run optimizer</button>
+        <p class="deploy-hint" id="deployHint">Chooses where to base each unit to cover the most risk-weighted schools within its radius.</p>
+      </div>
+
+      <div class="deploy-results" id="deployResults" hidden>
+        <div class="result-row">
+          <span>Coverage (ILP)</span>
+          <strong id="resultIlpPct">—</strong>
+        </div>
+        <div class="result-row">
+          <span>Greedy baseline</span>
+          <strong id="resultGreedyPct">—</strong>
+        </div>
+        <div class="result-row" id="resultGapRow">
+          <span>ILP advantage</span>
+          <strong id="resultGap">—</strong>
+        </div>
+        <div class="result-row muted">
+          <span>Solved in</span>
+          <strong id="resultTime">—</strong>
+        </div>
+      </div>
+
+      <ol class="ledger-body" id="deployBody"></ol>
+    </div>
+  </aside>
+</main>
+
+<footer class="notes">
+  <button id="toggleAbout" class="about-toggle" aria-expanded="false">About this data &amp; responsible-AI notes</button>
+  <div id="aboutPanel" class="about-panel" hidden>
+    <p><strong>What's real:</strong> school name, location, category, and management type (<code>datameet/udise_schools</code>), plus the infrastructure signal below — functional toilets, library, computer, and internet access per district, 2019-20 (<code>thejeshgn/udise-report-data-downloader</code>, cached UDISE+ Public Reports). Two independent government-data pulls, joined cleanly on all 34 districts.</p>
+    <p><strong>What's still a modeling choice:</strong> the rural/"terminal primary"/govt-management rule is a documented assumption, not fitted to real outcomes. The infra signal is real but district-level — every school in a district currently shares one figure, since school-level infra data wasn't reachable at that granularity here. Treat the combined score as a transparent proxy, not a validated dropout-probability model.</p>
+    <p><strong>Real-data cross-check:</strong> using the same real UDISE+ cohort data behind the infra numbers, Karnataka's actual 2019-20 secondary dropout rate computes to 17.8% — closely matching a published national estimate (~17%) found separately during this project's research. Independent numbers, same ballpark.</p>
+    <p><strong>Framing:</strong> this tool scores schools and localities, never individual children, and is meant to help administrators plan where to route support — not to flag or rank any student.</p>
+    <p><strong>Deploy-units caveat:</strong> coverage radius is straight-line distance, not road travel time, and every unit is assumed to cost the same. Both are simplifications worth replacing with real routing/cost data before acting on the plan.</p>
+  </div>
+</footer>
+
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
